@@ -7,20 +7,20 @@ Rust parser for **css** files using pest.
 ### Usage
 
 ```rust
-let input = "
+let input = r#"
     span {
         display: inline;
     }
-";
+"#;
 let stylesheet = StyleSheet::parse(input).unwrap();
-assert_eq!(stylesheet.0.len(), 1);
+assert_eq!(stylesheet.rules.len(), 1);
 ```
 
 ### Examples
 
-- [Info](../examples/info.rs)
+- [Parse](../examples/parse.rs)
 
 ### Task list
 
 - [ ] Write documentation
-- [X] Create a writer
+- [ ] Create a writer

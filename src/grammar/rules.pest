@@ -1,103 +1,75 @@
 //
-// Style Sheet
+// CSS
 //
-
-stylesheet = _{ SOI ~ rule* ~ EOI }
-
-//
-// Rule
-//
-
-rule = _{ rule_comment | rule_normal }
-
-rule_comment = _{ comment_start_tag ~ comment_body ~ comment_end_tag }
-comment_body = { (!comment_end_tag ~ ANY)* }
-comment_start_tag = _{ "/*" }
-comment_end_tag = _{ "*/" }
-
-rule_normal = { WHITE_SPACE+? ~ selector* ~ WHITE_SPACE+? ~ rule_start_tag ~ (!rule_end_tag ~ WHITE_SPACE+? ~ declaration?)* ~ rule_end_tag ~ WHITE_SPACE+? }
-
-rule_start_tag = _{ "{" }
-rule_end_tag = _{ "}" }
+css = _{ SOI ~ rule* ~ EOI }
 
 //
-// Selectors
+// RULES
 //
-
-selector = { simple_selector }
-
-// TODO: Make it so id, class, and type aren't seperated into there own selectors!
-simple_selector = { (id_selector | class_selector | type_selector | universal_selector)+ }
-
-id_selector = { "#" ~ ASCII_ALPHA+ }
-class_selector = { "." ~ ASCII_ALPHA+ }
-type_selector = { (ASCII_ALPHA | ASCII_DIGIT)+ }
-universal_selector = { "*" }
+rule            = _{ rule_comment | rule_normal }
+rule_comment    = { WHITE_SPACE* ~ comment ~ WHITE_SPACE* }
+rule_normal       = { r_base }
 
 //
-// Declarations
+// COMMENTS
 //
-
-declaration = { property ~ WHITE_SPACE+? ~ ":" ~ WHITE_SPACE+? ~ value ~ WHITE_SPACE+? ~ ";" }
-
-property = { (ASCII_ALPHA | "-" | "_")+ }
-value = _{ keyword | keyword_color | length | color }
-
-keyword = { KEYWORD_VALUES }
-keyword_color = { (KEYWORD_BASIC_COLORS | KEYWORD_EXTENDED_COLORS) }
-
-length = { ASCII_DIGIT+ ~ (ABSOLUTE_LENGTHS | RELATIVE_LENGTHS) }
-
-color = { "#" ~ (ASCII_ALPHA | ASCII_DIGIT){6} }
+comment             = _{ comment_start_tag ~ comment_body ~ comment_end_tag }
+comment_body        = { (!comment_end_tag ~ ANY)* }
+comment_start_tag   = _{ "/*" ~ WHITE_SPACE* }
+comment_end_tag     = _{ WHITE_SPACE* ~ "*/" }
 
 //
-// Extras
+// SELECTORS
+//
+sel_id          = _{ prefix_id ~ sel_id_body }
+sel_id_body     = { ASCII_ALPHA ~ text_chars* }
+
+sel_class       = _{ prefix_class ~ sel_class_body }
+sel_class_body  = { ASCII_ALPHA ~ text_chars* }
+
+sel_type        = { ASCII_ALPHA ~ text_chars* }
+
+sel_uni         = _{ "*" }
+
+sel_normal      = { (sel_id | sel_class | sel_uni | sel_type)* }
+
+selector        = _{ WHITE_SPACE* ~ sel_normal ~ WHITE_SPACE* }
+
+//
+// DECLARATION
+//
+del_property        = @{ ASCII_ALPHA ~ text_chars* }
+
+del_val_keyword     = @{ ASCII_ALPHA ~ text_chars* }
+del_val_color       = { prefix_id ~ (ASCII_ALPHA | ASCII_DIGIT){6} }
+
+del_val_length      = { del_val_length_body ~ length_type* }
+del_val_length_body = { ASCII_DIGIT* }
+
+del_value           = _{ del_val_keyword | del_val_color | del_val_length }
+
+declaration         = { WHITE_SPACE* ~ del_property ~ property_separater ~ WHITE_SPACE* ~ del_value ~ end_seperater ~ WHITE_SPACE* }
+
+//
+// RULE BASE
 //
 
-ABSOLUTE_LENGTHS = { "cm" | "mm" | "in" | "px" | "pt" | "pt" | "pc" }
-RELATIVE_LENGTHS = { "em" | "ex" | "ch" | "rem" | "vw" | "vh" | "vmin" | "vmax" | "%" }
+// Ex: h1 { color: red }
+r_base = _{ selector ~ left_curly_brace ~ (!right_curly_brace ~ declaration)* ~ right_curly_brace ~ WHITE_SPACE* }
 
-KEYWORD_VALUES = {
-    "auto"
-    | "inherit"
-    | "initial"
-    | "revert"
-    | "unset"
-    | "normal"
-    | "none"
-    | "hidden"
-    | "dotted"
-    | "dashed"
-    | "soild"
-    | "double"
-    | "groove"
-    | "ridge"
-    | "inset"
-    | "outset"
-    | "transparent"
-    | "block"
-    | "inline"
-}
+//
+// SYMBOLS / CHARACTERS
+//
+text_chars          = _{ ASCII_ALPHA | ASCII_DIGIT | "_" | "-" }
 
-KEYWORD_BASIC_COLORS = {
-    "black"
-    | "silver"
-    | "gray"
-    | "white"
-    | "maroon"
-    | "red"
-    | "purple"
-    | "fuchsia"
-    | "green"
-    | "lime"
-    | "olive"
-    | "yellow"
-    | "navy"
-    | "blue"
-    | "teal"
-    | "aqua"
-}
+left_curly_brace    = _{ "{" }
+right_curly_brace   = _{ "}" }
 
-KEYWORD_EXTENDED_COLORS = {
-    "aliceblue"
-}
+// multiples_separater = _{ "," }
+property_separater  = _{ ":" }
+end_seperater       = _{ ";" }
+
+prefix_id           = _{ "#" }
+prefix_class        = _{ "." }
+
+length_type         = { "cm" | "mm" | "in" | "px" | "pt" | "pt" | "pc" | "em" | "ex" | "ch" | "rem" | "vw" | "vh" | "vmin" | "vmax" | "%" }

@@ -1,111 +1,114 @@
-use std::collections::HashMap;
-
-use pest::{Parser, iterators::Pairs};
-use regex::Regex;
+use pest::{Parser, iterators::{Pairs, Pair}};
 
 use crate::{grammar::Grammar, Rule, Result};
 
+use self::constants::COLORS;
 pub use self::rule::*;
 
 mod rule;
 mod constants;
 
-#[derive(Debug)]
-pub struct StyleSheet(pub Vec<CssRule>);
+#[derive(Debug, Default)]
+pub struct StyleSheet {
+    pub rules: Vec<CssRule>,
+    pub errors: Vec<String>,
+}
 
 impl StyleSheet {
     pub fn parse(input: &str) -> Result<Self> {
-        let pairs = Grammar::parse(Rule::stylesheet, input).unwrap_or_else(|e| panic!("{}", e));
+        let pairs = Grammar::parse(Rule::css, input).unwrap_or_else(|e| panic!("{}", e));
 
-        let mut rules = Vec::new();
-
-        for pair in pairs {
-            match pair.as_rule() {
-                Rule::rule_normal => {
-                    match Self::build_rule(pair.into_inner())? {
-                        Some(css_rule) => {
-                            rules.push(css_rule);
-                        },
-                        None => println!("Broken rule"),
-                    }
-                },
-                _ => {}
-            }
-        }
-
-        Ok(Self(rules))
+        Self::build_stylesheet(pairs)
     }
 
-    fn build_rule(pairs: Pairs<Rule>) -> Result<Option<CssRule>> {
-        let mut selectors = Vec::new();
-        let mut declarations = HashMap::new();
+    fn build_stylesheet(pairs: Pairs<Rule>) -> Result<Self> {
+        let mut stylesheet = StyleSheet::default();
 
         for pair in pairs {
             match pair.as_rule() {
-                Rule::selector => {
-                    let mut id = None;
-                    let mut class = Vec::new();
-                    let mut tag_name = None;
-                    
-                    let inner_pairs = pair.into_inner().next().unwrap().into_inner();
-                    for pair in inner_pairs {
-                        match pair.as_rule() {
-                            Rule::id_selector => id = Some(pair.as_str().trim_start_matches('#').to_owned()),
-                            Rule::class_selector => class.push(pair.as_str().trim_start_matches('.').to_owned()),
-                            Rule::type_selector => tag_name = Some(pair.as_str().to_owned()),
-                            _ => {}
-                        }
-                    }
-
-                    selectors.push(Selector::Simple(SimpleSelector {
-                        id,
-                        class,
-                        tag_name,
-                    }));
+                Rule::rule_comment => {
+                    stylesheet
+                        .rules.push(CssRule::Comment(pair.into_inner().as_str().to_string()));
                 },
-                Rule::declaration => {
-                    let mut property = String::from("none");
-                    let mut value = Value::Keyword(String::from("none"));
-
-                    let inner_pairs = pair.into_inner();
-                    for pair in inner_pairs {
-                        match pair.as_rule() {
-                            Rule::property => property = pair.as_str().to_owned(),
-                            Rule::keyword => value = Value::Keyword(pair.as_str().to_owned()),
-                            Rule::keyword_color => value = Value::Color(Color::from_keyword(pair.as_str())),
-                            Rule::length => {
-                                let re = Regex::new(r"\d+").unwrap();
-
-                                // Content
-                                let content = re.find_iter(pair.as_str())
-                                    .map(|m| m.as_str())
-                                    .collect::<Vec<&str>>()
-                                    .join("");
-
-                                // Unit
-                                let raw_unit = re.replace_all(pair.as_str(), "").to_string();
-                                let unit = Unit::from_str(&raw_unit).unwrap();
-
-                                value = Value::Length(content.parse().unwrap(), unit);
-                            }
-                            Rule::color => value = Value::Color(Color::from_hex(pair.as_str())),
-                            _ => {}
-                        }
+                Rule::rule_normal => match Self::build_normal_rule(pair) {
+                    Ok(rule) => {
+                        let normal_rule = CssRule::Normal(rule);
+                        stylesheet.rules.push(normal_rule);
                     }
-
-                    declarations.insert(property, value);
-                },
+                    Err(error) => {
+                        stylesheet.errors.push(error.to_string());
+                    }
+                }
                 _ => {}
             }
         }
 
-        if !selectors.is_empty() {
-            Ok(Some(CssRule {
-                selectors,
-                declarations,
-            }))
-        } else {
-            Ok(None)
+        Ok(stylesheet)
+    }
+
+    fn build_normal_rule(pair: Pair<Rule>) -> Result<NormalRule> {
+        let mut normal_rule = NormalRule::default();
+        
+        for pair in pair.into_inner() {
+            match pair.as_rule() {
+                Rule::sel_normal => {
+                    normal_rule.selectors.push(Self::build_simple_selector(pair.into_inner())?);
+                }
+                Rule::declaration => {
+                    let del = Self::build_declaration(pair.into_inner())?;
+                    normal_rule.declarations.insert(del.0, del.1);
+                }
+                _ => {}
+            }
         }
+
+        Ok(normal_rule)
+    }
+
+    fn build_simple_selector(pairs: Pairs<Rule>) -> Result<Selector> {
+        let mut selector = SimpleSelector::default();
+
+        for pair in pairs {
+            match pair.as_rule() {
+                Rule::sel_id_body => selector.id = Some(pair.as_str().to_string()),
+                Rule::sel_class_body => selector.class.push(pair.as_str().to_string()),
+                Rule::sel_type => selector.tag_name = Some(pair.as_str().to_string()),
+                _ => {}
+            }
+        }
+
+        Ok(Selector::Simple(selector))
+    }
+
+    fn build_declaration(pairs: Pairs<Rule>) -> Result<(String, Value)> {
+        let mut declaration = (String::default(), Value::StringLiteral(String::default()));
+
+        for pair in pairs {
+            match pair.as_rule() {
+                Rule::del_property => declaration.0 = pair.as_str().to_string(),
+                Rule::del_val_keyword => {
+                    let colors = COLORS.lock().unwrap();
+                    if let Some(color) = colors.get(pair.as_str()) {
+                        declaration.1 = Value::Color(*color)
+                    } else {
+                        declaration.1 = Value::Keyword(pair.as_str().to_string())
+                    }
+                },
+                Rule::del_val_length => {
+                    let mut inner_pairs = pair.into_inner();
+                    let len_value = inner_pairs.next().unwrap();
+                    let len_type = inner_pairs.next().unwrap();
+
+                    declaration.1 = Value::Length(
+                        len_value.as_str().parse().unwrap(),
+                        Unit::from_str(len_type.as_str()).unwrap()
+                    );
+                }
+                Rule::del_val_color => declaration.1 = Value::Color(Color::from_hex(pair.as_str())),
+                _ => {}
+            }
+        }
+
+        Ok(declaration)
     }
 }

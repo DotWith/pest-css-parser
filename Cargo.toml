@@ -1,6 +1,6 @@
 [package]
 name = "pest-css-parser"
-version = "0.1.0"
+version = "0.1.5"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "A stylesheet (css) parser using pest"
@@ -17,5 +17,5 @@ once_cell = "1.17.1"
 regex = "1.8.1"
 
 [[example]]
-name = "info"
-path = "examples/info.rs"
+name = "parse"
+path = "examples/parse.rs"

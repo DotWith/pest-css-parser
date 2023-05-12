@@ -4,18 +4,24 @@ use super::constants::COLORS;
 
 pub type Specificity = (usize, usize, usize);
 
-#[derive(Debug, Default)]
-pub struct CssRule {
+#[derive(Debug, Clone, PartialEq)]
+pub enum CssRule {
+    Normal(NormalRule),
+    Comment(String),
+}
+
+#[derive(Debug, Default, Clone, PartialEq)]
+pub struct NormalRule {
     pub selectors: Vec<Selector>,
     pub declarations: HashMap<String, Value>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Selector {
     Simple(SimpleSelector),
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct SimpleSelector {
     pub id: Option<String>,
     pub class: Vec<String>,
@@ -27,14 +33,11 @@ pub enum Value {
     Keyword(String),
     Length(f32, Unit),
     Color(Color),
+    StringLiteral(String),
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Unit {
-    //
-    // Absolute Lengths
-    //
-
     /// Centimeters
     Cm,
     /// Millieters
@@ -47,10 +50,6 @@ pub enum Unit {
     Pt,
     /// Picas
     Pc,
-
-    //
-    // Relative Lengths
-    //
     /// Relative to the font-size of the element
     Em,
     /// Relative to the x-height of the current font
@@ -67,8 +66,6 @@ pub enum Unit {
     VMin,
     /// Relative to 1% of viewport's* larger dimension
     VMax,
-    /// %
-    /// 
     /// Relative to the parent element
     Percent,
 }
