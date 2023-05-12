@@ -4,18 +4,32 @@ use super::constants::COLORS;
 
 pub type Specificity = (usize, usize, usize);
 
-#[derive(Debug, Default)]
-pub struct CssRule {
+#[derive(Debug, Clone, PartialEq)]
+pub enum CssRule {
+    Normal(NormalRule),
+    AtRule(AtRule),
+    Comment(String),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct NormalRule {
     pub selectors: Vec<Selector>,
     pub declarations: HashMap<String, Value>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default, Clone, PartialEq)]
+pub struct AtRule {
+    pub name: String,
+    pub value: Option<Value>,
+    pub rules: Vec<CssRule>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum Selector {
     Simple(SimpleSelector),
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct SimpleSelector {
     pub id: Option<String>,
     pub class: Vec<String>,
@@ -27,6 +41,9 @@ pub enum Value {
     Keyword(String),
     Length(f32, Unit),
     Color(Color),
+    StringLiteral(String),
+    Number(f32),
+    FunCall(FunCall),
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -79,6 +96,12 @@ pub struct Color {
     pub g: u8,
     pub b: u8,
     pub a: u8,
+}
+
+#[derive(Debug, Default, Clone, PartialEq)]
+pub struct FunCall {
+    pub name: String,
+    pub arguments: Vec<Value>,
 }
 
 impl Selector {

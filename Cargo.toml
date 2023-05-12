@@ -19,3 +19,7 @@ regex = "1.8.1"
 [[example]]
 name = "info"
 path = "examples/info.rs"
+
+[[example]]
+name = "font"
+path = "examples/font.rs"

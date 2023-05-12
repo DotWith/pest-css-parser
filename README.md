@@ -19,6 +19,7 @@ assert_eq!(stylesheet.0.len(), 1);
 ### Examples
 
 - [Info](../examples/info.rs)
+- [Font](../examples/font.rs)
 
 ### Task list
 

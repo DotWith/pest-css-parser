@@ -8,25 +8,28 @@ stylesheet = _{ SOI ~ rule* ~ EOI }
 // Rule
 //
 
-rule = _{ rule_comment | rule_normal }
+rule = _{ comment_rule | normal_rule | at_rule }
 
-rule_comment = _{ comment_start_tag ~ comment_body ~ comment_end_tag }
+// Comment
+comment_rule = _{ comment_start_tag ~ comment_body ~ comment_end_tag }
 comment_body = { (!comment_end_tag ~ ANY)* }
 comment_start_tag = _{ "/*" }
 comment_end_tag = _{ "*/" }
 
-rule_normal = { WHITE_SPACE+? ~ selector* ~ WHITE_SPACE+? ~ rule_start_tag ~ (!rule_end_tag ~ WHITE_SPACE+? ~ declaration?)* ~ rule_end_tag ~ WHITE_SPACE+? }
+// Normal rule
+normal_rule = { WHITE_SPACE+? ~ selector* ~ WHITE_SPACE+? ~ RULE_START_TAG ~ (!RULE_END_TAG ~ WHITE_SPACE+? ~ declaration?)* ~ RULE_END_TAG ~ WHITE_SPACE+? }
 
-rule_start_tag = _{ "{" }
-rule_end_tag = _{ "}" }
+// At rule
+at_rule = { atr_short | atr_full }
+atr_short = { WHITE_SPACE+? ~ atr_name* ~ WHITE_SPACE+? ~ value* ~ WHITE_SPACE+? ~ ";" ~ WHITE_SPACE+? }
+atr_full = { WHITE_SPACE+? ~ atr_name* ~ WHITE_SPACE+? ~ RULE_START_TAG ~ (!RULE_END_TAG ~ WHITE_SPACE+? ~ declaration?)* ~ RULE_END_TAG ~ WHITE_SPACE+? }
+atr_name = { "@" ~ (ASCII_ALPHA | "-" | "_")+ }
 
 //
 // Selectors
-//
-
+//declaration
 selector = { simple_selector }
 
-// TODO: Make it so id, class, and type aren't seperated into there own selectors!
 simple_selector = { (id_selector | class_selector | type_selector | universal_selector)+ }
 
 id_selector = { "#" ~ ASCII_ALPHA+ }
@@ -41,18 +44,33 @@ universal_selector = { "*" }
 declaration = { property ~ WHITE_SPACE+? ~ ":" ~ WHITE_SPACE+? ~ value ~ WHITE_SPACE+? ~ ";" }
 
 property = { (ASCII_ALPHA | "-" | "_")+ }
-value = _{ keyword | keyword_color | length | color }
+value = _{ keyword | length | color | number | string_literal | fun }
 
-keyword = { KEYWORD_VALUES }
+keyword = { KEYWORD_VALUES | keyword_color }
 keyword_color = { (KEYWORD_BASIC_COLORS | KEYWORD_EXTENDED_COLORS) }
 
-length = { ASCII_DIGIT+ ~ (ABSOLUTE_LENGTHS | RELATIVE_LENGTHS) }
+fun = _{ KEYWORD_FUNS ~ "(" ~ WHITE_SPACE+? ~ fun_body ~ WHITE_SPACE+? ~ ")" }
+fun_body = { string_literal+ }
+
+string_literal = _{ BRACE ~ string_literal_body ~ BRACE }
+string_literal_body = { (ASCII_ALPHA | ASCII_DIGIT | "-" | "_" | "/" | "." | "?" | "#" | WHITE_SPACE)* }
+
+length = _{ length_value ~ length_type }
+length_value = { (ASCII_DIGIT | ".")+ }
+length_type = { ABSOLUTE_LENGTHS | RELATIVE_LENGTHS }
 
 color = { "#" ~ (ASCII_ALPHA | ASCII_DIGIT){6} }
+
+number = { ASCII_DIGIT+ }
 
 //
 // Extras
 //
+
+BRACE = _{ "\"" | "'" }
+
+RULE_START_TAG = _{ "{" }
+RULE_END_TAG = _{ "}" }
 
 ABSOLUTE_LENGTHS = { "cm" | "mm" | "in" | "px" | "pt" | "pt" | "pc" }
 RELATIVE_LENGTHS = { "em" | "ex" | "ch" | "rem" | "vw" | "vh" | "vmin" | "vmax" | "%" }
@@ -77,6 +95,13 @@ KEYWORD_VALUES = {
     | "transparent"
     | "block"
     | "inline"
+    | "swap"
+}
+
+KEYWORD_FUNS = {
+    "url"
+    | "format"
+    | "local"
 }
 
 KEYWORD_BASIC_COLORS = {
