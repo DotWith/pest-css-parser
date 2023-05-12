@@ -1,0 +1,103 @@
+//
+// Style Sheet
+//
+
+stylesheet = _{ SOI ~ rule* ~ EOI }
+
+//
+// Rule
+//
+
+rule = _{ rule_comment | rule_normal }
+
+rule_comment = _{ comment_start_tag ~ comment_body ~ comment_end_tag }
+comment_body = { (!comment_end_tag ~ ANY)* }
+comment_start_tag = _{ "/*" }
+comment_end_tag = _{ "*/" }
+
+rule_normal = { WHITE_SPACE+? ~ selector* ~ WHITE_SPACE+? ~ rule_start_tag ~ (!rule_end_tag ~ WHITE_SPACE+? ~ declaration?)* ~ rule_end_tag ~ WHITE_SPACE+? }
+
+rule_start_tag = _{ "{" }
+rule_end_tag = _{ "}" }
+
+//
+// Selectors
+//
+
+selector = { simple_selector }
+
+// TODO: Make it so id, class, and type aren't seperated into there own selectors!
+simple_selector = { (id_selector | class_selector | type_selector | universal_selector)+ }
+
+id_selector = { "#" ~ ASCII_ALPHA+ }
+class_selector = { "." ~ ASCII_ALPHA+ }
+type_selector = { (ASCII_ALPHA | ASCII_DIGIT)+ }
+universal_selector = { "*" }
+
+//
+// Declarations
+//
+
+declaration = { property ~ WHITE_SPACE+? ~ ":" ~ WHITE_SPACE+? ~ value ~ WHITE_SPACE+? ~ ";" }
+
+property = { (ASCII_ALPHA | "-" | "_")+ }
+value = _{ keyword | keyword_color | length | color }
+
+keyword = { KEYWORD_VALUES }
+keyword_color = { (KEYWORD_BASIC_COLORS | KEYWORD_EXTENDED_COLORS) }
+
+length = { ASCII_DIGIT+ ~ (ABSOLUTE_LENGTHS | RELATIVE_LENGTHS) }
+
+color = { "#" ~ (ASCII_ALPHA | ASCII_DIGIT){6} }
+
+//
+// Extras
+//
+
+ABSOLUTE_LENGTHS = { "cm" | "mm" | "in" | "px" | "pt" | "pt" | "pc" }
+RELATIVE_LENGTHS = { "em" | "ex" | "ch" | "rem" | "vw" | "vh" | "vmin" | "vmax" | "%" }
+
+KEYWORD_VALUES = {
+    "auto"
+    | "inherit"
+    | "initial"
+    | "revert"
+    | "unset"
+    | "normal"
+    | "none"
+    | "hidden"
+    | "dotted"
+    | "dashed"
+    | "soild"
+    | "double"
+    | "groove"
+    | "ridge"
+    | "inset"
+    | "outset"
+    | "transparent"
+    | "block"
+    | "inline"
+}
+
+KEYWORD_BASIC_COLORS = {
+    "black"
+    | "silver"
+    | "gray"
+    | "white"
+    | "maroon"
+    | "red"
+    | "purple"
+    | "fuchsia"
+    | "green"
+    | "lime"
+    | "olive"
+    | "yellow"
+    | "navy"
+    | "blue"
+    | "teal"
+    | "aqua"
+}
+
+KEYWORD_EXTENDED_COLORS = {
+    "aliceblue"
+}
