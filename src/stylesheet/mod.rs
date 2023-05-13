@@ -8,7 +8,7 @@ pub use self::rule::*;
 mod rule;
 mod constants;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct StyleSheet {
     pub rules: Vec<CssRule>,
     pub errors: Vec<String>,
