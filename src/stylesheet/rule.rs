@@ -97,27 +97,26 @@ impl Selector {
     }
 }
 
-impl Unit {
-    pub fn from_str(str: &str) -> Option<Self> {
-        match str {
-            "cm" => Some(Unit::Cm),
-            "mm" => Some(Unit::Mm),
-            "in" => Some(Unit::In),
-            "px" => Some(Unit::Px),
-            "pt" => Some(Unit::Pt),
-            "pc" => Some(Unit::Pc),
+impl From<&str> for Unit {
+    fn from(value: &str) -> Self {
+        match value {
+            "cm" => Unit::Cm,
+            "mm" => Unit::Mm,
+            "in" => Unit::In,
+            "px" => Unit::Px,
+            "pt" => Unit::Pt,
+            "pc" => Unit::Pc,
 
-            "em" => Some(Unit::Em),
-            "ex" => Some(Unit::Ex),
-            "ch" => Some(Unit::Ch),
-            "rem" => Some(Unit::Rem),
-            "vw" => Some(Unit::Vw),
-            "vh" => Some(Unit::Vh),
-            "vmin" => Some(Unit::VMin),
-            "vmax" => Some(Unit::VMax),
-            "%" => Some(Unit::Percent),
-
-            _ => None,
+            "em" => Unit::Em,
+            "ex" => Unit::Ex,
+            "ch" => Unit::Ch,
+            "rem" => Unit::Rem,
+            "vw" => Unit::Vw,
+            "vh" => Unit::Vh,
+            "vmin" => Unit::VMin,
+            "vmax" => Unit::VMax,
+            "%" => Unit::Percent,
+            _ => Unit::Px,
         }
     }
 }
@@ -150,6 +149,6 @@ impl Color {
 
     pub fn from_keyword(name: &str) -> Self {
         let unlocked = COLORS.lock().unwrap();
-        unlocked.get(&name.to_lowercase()).unwrap().clone()
+        *unlocked.get(&name.to_lowercase()).unwrap()
     }
 }

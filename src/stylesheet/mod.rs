@@ -101,7 +101,7 @@ impl StyleSheet {
 
                     declaration.1 = Value::Length(
                         len_value.as_str().parse().unwrap(),
-                        Unit::from_str(len_type.as_str()).unwrap()
+                        Unit::from(len_type.as_str())
                     );
                 }
                 Rule::del_val_color => declaration.1 = Value::Color(Color::from_hex(pair.as_str())),
